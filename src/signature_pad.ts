@@ -53,7 +53,6 @@ export default class SignaturePad {
   // Private stuff
   /* tslint:disable: variable-name */
   private _ctx: CanvasRenderingContext2D;
-  private _mouseButtonDown: boolean;
   private _isEmpty: boolean;
   private _lastPoints: Point[]; // Stores up to 4 most recent points; used to generate a new curve
   private _data: PointGroup[]; // Stores all points in groups (one group per line or dot)
@@ -91,7 +90,7 @@ export default class SignaturePad {
     this.clear();
 
     // Enable mouse and touch event handlers
-    this.on();
+    // this.on();
   }
 
   public clear(): void {
@@ -144,38 +143,14 @@ export default class SignaturePad {
     }
   }
 
-  public on(): void {
-    // Disable panning/zooming when touching canvas element
-    this.canvas.style.touchAction = 'none';
-    this.canvas.style.msTouchAction = 'none';
-
-    if (window.PointerEvent) {
-      this._handlePointerEvents();
-    } else {
-      this._handleMouseEvents();
-
-      if ('ontouchstart' in window) {
-        this._handleTouchEvents();
-      }
-    }
+  public handleTouchStart(event: TouchEvent): void {
+    this._handleTouchStart(event);
   }
-
-  public off(): void {
-    // Enable panning/zooming when touching canvas element
-    this.canvas.style.touchAction = 'auto';
-    this.canvas.style.msTouchAction = 'auto';
-
-    this.canvas.removeEventListener('pointerdown', this._handleMouseDown);
-    this.canvas.removeEventListener('pointermove', this._handleMouseMove);
-    document.removeEventListener('pointerup', this._handleMouseUp);
-
-    this.canvas.removeEventListener('mousedown', this._handleMouseDown);
-    this.canvas.removeEventListener('mousemove', this._handleMouseMove);
-    document.removeEventListener('mouseup', this._handleMouseUp);
-
-    this.canvas.removeEventListener('touchstart', this._handleTouchStart);
-    this.canvas.removeEventListener('touchmove', this._handleTouchMove);
-    this.canvas.removeEventListener('touchend', this._handleTouchEnd);
+  public handleTouchMove(event: TouchEvent): void {
+    this._handleTouchMove(event);
+  }
+  public handleTouchEnd(event: TouchEvent): void {
+    this._handleTouchEnd(event);
   }
 
   public isEmpty(): boolean {
@@ -198,32 +173,11 @@ export default class SignaturePad {
     return this._data;
   }
 
-  // Event handlers
-  private _handleMouseDown = (event: MouseEvent): void => {
-    if (event.which === 1) {
-      this._mouseButtonDown = true;
-      this._strokeBegin(event);
-    }
-  };
-
-  private _handleMouseMove = (event: MouseEvent): void => {
-    if (this._mouseButtonDown) {
-      this._strokeMoveUpdate(event);
-    }
-  };
-
-  private _handleMouseUp = (event: MouseEvent): void => {
-    if (event.which === 1 && this._mouseButtonDown) {
-      this._mouseButtonDown = false;
-      this._strokeEnd(event);
-    }
-  };
-
   private _handleTouchStart = (event: TouchEvent): void => {
     // Prevent scrolling.
     event.preventDefault();
 
-    if (event.targetTouches.length === 1) {
+    if (event.touches.length === 1) {
       const touch = event.changedTouches[0];
       this._strokeBegin(touch);
     }
@@ -233,7 +187,7 @@ export default class SignaturePad {
     // Prevent scrolling.
     event.preventDefault();
 
-    const touch = event.targetTouches[0];
+    const touch = event.touches[0];
     this._strokeMoveUpdate(touch);
   };
 
@@ -308,28 +262,6 @@ export default class SignaturePad {
     if (typeof this.onEnd === 'function') {
       this.onEnd(event);
     }
-  }
-
-  private _handlePointerEvents(): void {
-    this._mouseButtonDown = false;
-
-    this.canvas.addEventListener('pointerdown', this._handleMouseDown);
-    this.canvas.addEventListener('pointermove', this._handleMouseMove);
-    document.addEventListener('pointerup', this._handleMouseUp);
-  }
-
-  private _handleMouseEvents(): void {
-    this._mouseButtonDown = false;
-
-    this.canvas.addEventListener('mousedown', this._handleMouseDown);
-    this.canvas.addEventListener('mousemove', this._handleMouseMove);
-    document.addEventListener('mouseup', this._handleMouseUp);
-  }
-
-  private _handleTouchEvents(): void {
-    this.canvas.addEventListener('touchstart', this._handleTouchStart);
-    this.canvas.addEventListener('touchmove', this._handleTouchMove);
-    this.canvas.addEventListener('touchend', this._handleTouchEnd);
   }
 
   // Called when a new line is started
